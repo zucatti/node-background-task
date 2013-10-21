@@ -29,7 +29,7 @@ exports.testWithFile = function(size, test){
 };
 
 exports.waitForSetup = function(bgTaskOrBus, cb) {
-    var pending = bgTaskOrBus.msgBus ? 6 : 3;
+    var pending = 3;
     var next    = function() {
         pending -= 1;
         if(0 === pending) {
@@ -38,11 +38,10 @@ exports.waitForSetup = function(bgTaskOrBus, cb) {
     };
     ['dataClient', 'pubClient', 'subClient'].forEach(function(client) {
         if(bgTaskOrBus.msgBus) {// Background Task.
-          bgTaskOrBus.msgBus[client].on('ready', next);
-          bgTaskOrBus.progressBus[client].on('ready', next);
+          bgTaskOrBus.msgBus[client].client.on('clientReady', next);
         }
         else {// Message.
-          bgTaskOrBus[client].on('ready', next);
+          bgTaskOrBus[client].client.on('ready', next);
         }
     });
 };

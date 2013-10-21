@@ -80,6 +80,7 @@ describe('messaging', function(){
                 rcPubSub.publish("msgChannels:broadcast", "0xdeadbeef");
             });
         });
+
         it('should verify that authentication works', function(done){
             // have to augment console.log as version 0.8.5 of redis no longer throws an error when a password
             // is supplied but none is required,
@@ -160,7 +161,7 @@ describe('messaging', function(){
                 mBus.once('data_available', function(id){
                     mBus.acceptMessage(id, function(rep){
                         rep.should.be.an.instanceOf(Error);
-                        rep.message.should.equal("DB doesn't recognize message");
+                        rep.message.should.match(/^No message for/);
                         done();
                     });
                 });
@@ -189,7 +190,7 @@ describe('messaging', function(){
 
                 mBus.on('error', function(err){
                     err.should.be.an.instanceOf(Error);
-                    err.message.should.match(/^JSON parsing failed!/);
+                    err.message.should.match(/^Bad data in sent message/);
                     done();
                 });
 
@@ -329,7 +330,7 @@ describe('messaging', function(){
             it('should reject messages not in redis', function(done){
                 mBusWorker.acceptMessage("NOT FOUND", function(reply){
                     reply.should.be.an.instanceOf(Error);
-                    reply.message.should.equal("DB doesn't recognize message");
+                    reply.message.should.match(/^No message for id/);
                     done();
                 });
 
@@ -394,7 +395,7 @@ describe('messaging', function(){
             });
 
             it('should publish only once on concurrent messaging.', function(done) {
-                var stub     = sinon.stub(mBusWorker.pubClient, 'publish')
+                var stub     = sinon.stub(mBusWorker.pubClient, 'publishKey')
                   , body     = { body: 'hi mom' }
                   , msgId    = messaging.makeId()
                   , testMode = true;
@@ -412,14 +413,14 @@ describe('messaging', function(){
 
 
             it('should publish only once on concurrent messaging, with errors.', function(done) {
-                var pubStub  = sinon.stub(mBusWorker.pubClient, 'publish')
+                var pubStub  = sinon.stub(mBusWorker.pubClient, 'publishKey')
                   , msgId    = messaging.makeId()
                   , testMode = true;
 
                 // Force `hset` to throw an error to verify that publish is
                 // called even when one of the concurrent request fails.
                 var errors   = 0;
-                var dataStub = sinon.stub(mBusWorker.dataClient, 'hset', function(hash, msgId, msg, fn) {
+                var dataStub = sinon.stub(mBusWorker.dataClient, 'setMessage', function(hash, msgId, msg, fn) {
                     try {
                         if(JSON.parse(msg).error) {
                             errors += 1;

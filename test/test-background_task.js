@@ -89,6 +89,7 @@ describe('node-background-task', function(){
                 });
 
                 bgTask.on('TASK_DONE', function(id, reply){
+                  console.log("Task done");
                     id.should.equal(tid);
                     reply.should.eql({kid: "kidEmitTaskDone", body: "test"});
                     done();
@@ -737,7 +738,7 @@ describe('node-background-task', function(){
                     bl.addFailure(key, "Testing failure", function(reason){
                         process.nextTick(next);
                     });
-                }, function(err, _) {
+                }, function(err, result) {
                     setTimeout(function(){
                         async.timesSeries(count, function(n, next){
                             bl.addFailure(key, "Testing failure", function(reason){
