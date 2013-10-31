@@ -3,7 +3,7 @@
   "forin": true,
   "noarg": true,
   "bitwise": true,
-  "strict": true,
+  "globalstrict": true,
   "undef": true,
   "unused": true,
   "curly": true,
@@ -11,3 +11,4 @@
   "indent": 2,
   "maxerr": 1000
 }
+
