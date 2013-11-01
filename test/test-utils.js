@@ -37,15 +37,11 @@ exports.waitForSetup = function(bgTaskOrBus, cb) {
         }
     };
     ['dataClient', 'pubClient', 'subClient'].forEach(function(client) {
-        if(bgTaskOrBus.notificationBus) {// Background Task.
-          if (client === 'dataClient') {
-            bgTaskOrBus.notificationBus[client].redis.client.on('clientReady', next);
-          } else {
-            bgTaskOrBus.notificationBus[client].client.on('clientReady', next);
-          }
-        }
-        else {// Message.
-          bgTaskOrBus[client].client.on('ready', next);
-        }
+      var bus = bgTaskOrBus.notificationBus ? bgTaskOrBus.notificationBus : bgTaskOrBus;
+      if (client === 'dataClient') {
+        bus[client].redis.client.on('clientReady', next);
+      } else {
+        bus[client].client.on('clientReady', next);
+      }
     });
 };
