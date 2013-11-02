@@ -158,14 +158,14 @@ describe('messaging', function(){
         nBus.once('notification_received', function(id){
           nBus.processNotification(id, status, function(err,rep){
             err.should.be.an.instanceOf(Error);
-            err.message.should.match(/Bad data in sent message/);
+            err.message.should.match(/No message for key/);
             done();
           });
         });
 
         testUtils.waitForSetup(nBus, function() {
           rc.hset(status + nBus.baseHash, "0xdeadbeef", "this is not json");
-          rc.publish(nBus.broadcastChannel, "0xdeadbeef");
+          rc.publish(nBus.broadcastChannel, JSON.stringify({id: "0xdeadbeef", status: status}));
         });
       });
 
@@ -182,14 +182,14 @@ describe('messaging', function(){
         });
 
         testUtils.waitForSetup(nBus, function() {
-          rc.publish(nBus.broadcastChannel, "0xdeadbeef");
+          rc.publish(nBus.broadcastChannel, JSON.stringify({id: "0xdeadbeef", status: status}));
         });
       });
 
-      /*it.only('should handle a mal-formed message', function(done){
-        var nBus = notification.initialize()
+      it('should handle a mal-formed message', function(done){
+        var nBus = notification.initialize();
 
-        nBus.on('error', function(err){
+        nBus.on('error', function(err){     console.log(err);
           err.should.be.an.instanceOf(Error);
           err.message.should.equal('Invalid message received!');
           done();
@@ -201,63 +201,72 @@ describe('messaging', function(){
       });
 
       it('should handle JSON that is corrupt', function(done){
-        var mBus = messaging.connect()
+        var nBus = notification.initialize();
+        var status="plkj";
 
-        mBus.on('error', function(err){
-          err.should.be.an.instanceOf(Error);
-          err.message.should.match(/^JSON parsing failed!/);
-          done();
+        nBus.once('notification_received', function(id) {
+          nBus.processNotification(id.id, status, function(err, rep){
+            err.should.be.an.instanceOf(Error);
+            err.message.should.match(/^Bad data in sent message/);
+            done();
+          });
         });
 
-        testUtils.waitForSetup(mBus, function() {
-          rc.hset(mBus.responseHash, "0xdeadbeef", "this is not json");
-          rc.publish(mBus.listenChannel, "0xdeadbeef FAILED");
+
+        testUtils.waitForSetup(nBus, function() {
+          rc.hset(status + nBus.baseHash, "0xdeadbeef", "this is not json");
+          rc.publish(nBus.listenChannel, JSON.stringify({id: "0xdeadbeef", status: status}));
         });
 
       });
+
       it('should handle when an empty item is pulled from the queue', function(done){
-        var mBus = messaging.connect()
+        var  nBus = notification.initialize();
+        var status="plkj";
 
-        mBus.on('error', function(err){
-          err.should.be.an.instanceOf(Error);
-          err.message.should.match(/^No message for id/);
-          done();
+        nBus.once('notification_received', function(id) {
+          nBus.processNotification(id.id, status, function(err, rep){
+            err.should.be.an.instanceOf(Error);
+            err.message.should.match(/^No message for key/);
+            done();
+          });
         });
 
-        testUtils.waitForSetup(mBus, function() {
-          rc.publish(mBus.listenChannel, "0xdeadbeef FAILED");
+        testUtils.waitForSetup(nBus, function() {
+          rc.publish(nBus.listenChannel, JSON.stringify({id: "0xdeadbeef", status: status}));
         });
-      }); */
+      });
     });
 
-    /*describe('#shutdown', function(){
+    describe('#shutdown', function(){
       it('should not allow more tasks to complete', function(done){
         var cback;
+        var status="plmk";
 
-        mBusWorker.once('data_available', function(id){
-          mBusWorker.acceptMessage(id, function(msg){
-            mBusWorker.sendResponse(id, 'SUCCESS', msg);
+        notificationBusWorker.once('notification_received', function(id){
+          notificationBusWorker.processNotification(id, status, function(err, msg){
+            notificationBusWorker.sendNotification(notificationBus.listenChannel, id, msg, 'SUCCESS');
           });
         });
 
         cback = function(){
-          var cid = messaging.makeId();
-          mBus.sendMessage(cid, {body: 'test'}, function(reply){
-            reply.should.be.an.instanceOf(Error);
-            reply.message.should.equal("Attempt to use shutdown MessageBus.");
+          var cid = "abcdefg";
+          notificationBus.sendNotification(notificationBus.broadcastChannel, cid, {body: 'test'}, "NEWTASK", function(err, reply){
+            err.should.be.an.instanceOf(Error);
+            err.message.should.equal("Attempt to use shutdown Notification Bus.");
             done();
           });
         };
 
-        var cid = messaging.makeId();
-        mBus.sendMessage(cid, {body: 'test'}, function(reply){
-          reply.should.eql({body: 'test'});
-          mBus.shutdown();
+        var cid = "poiut";
+        notificationBus.sendNotification(notificationBus.broadcastChannel, cid, {body: 'test'}, "NEWTASK", function(err, reply){
+          reply.should.eql(notificationBus.listenChannel);
+          notificationBus.shutdown();
           cback();
         });
       });
     });
-
+    /*
     describe('#sendMessage', function(){
       it('should call callback', function(done){
         mBusWorker.once('data_available', function(id){
@@ -319,7 +328,7 @@ describe('messaging', function(){
       });
     });
 
-    describe('#acceptMessage', function(){
+    describe('#processMessage', function(){
       it('should reject no parameters', function(){
         (function() {
           mBusWorker.acceptMessage(null, null);
