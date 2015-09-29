@@ -147,7 +147,8 @@ describe('messaging', function(){
     describe('Error Handling', function(){
       it('should emit an error when redis is not available.', function(done) {
         notificationBus = notification.initialize({ host: 'example' }, function() { });
-        notificationBus.on('error', function(evt) {
+        notificationBus.on('error', function(err) {
+          err.message.should.match(/ENOTFOUND/); // Host `example` does not exist.
           notificationBus.shutdown(); // Stop now to avoid more error events.
           done();
         });
