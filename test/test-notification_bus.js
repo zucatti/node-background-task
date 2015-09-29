@@ -145,6 +145,14 @@ describe('messaging', function(){
     });
 
     describe('Error Handling', function(){
+      it('should emit an error when redis is not available.', function(done) {
+        notificationBus = notification.initialize({ host: 'example' }, function() { });
+        notificationBus.on('error', function(evt) {
+          notificationBus.shutdown(); // Stop now to avoid more error events.
+          done();
+        });
+      });
+
       it('should handle bad items on the worker queue', function(done){
         var status= "biwq";
         var nBus = notification.initialize({isWorker: true, broadcastChannel: "biwqC"}, function() {
